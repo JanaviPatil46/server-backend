@@ -63,6 +63,10 @@ app.use("/", emailsync);
 app.use('/uploads', express.static('middleware/uploads'));
 
 
+// firmsettinga
+const firmsetting = require("./routes/firmsettingRoutes");
+app.use("/", firmsetting);
+
 
 const PORT = process.env.PORT || 8880;
 app.listen(PORT, ()=>{
