@@ -51,10 +51,22 @@ const contactSchema = new mongoose.Schema({
         // required: true
     }],
 
+    // country: {
+    //     type: String,
+    //     //  required: [true, 'Country is required'],
+    // },
+
     country: {
-        type: String,
-        //  required: [true, 'Country is required'],
+        name: {
+            type: String,
+            required: true
+        },
+        code: {
+            type: String,
+            required: true
+        }
     },
+    
     streetAddress: {
         type: String,
         //required: [true, 'Street address is required'],
@@ -84,7 +96,11 @@ const contactSchema = new mongoose.Schema({
         ref: 'Accounts',
         // required: true
     },
-
+    
+    description: {
+        type: String
+    },
+    
     active: {
         type: Boolean,
         default: true,

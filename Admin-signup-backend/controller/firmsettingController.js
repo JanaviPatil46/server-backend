@@ -1,4 +1,4 @@
-const FirmSetting = require('../models/firmsettingModel')
+const FirmSetting = require('../Models/firmsettingModel')
 const mongoose = require('mongoose')
 const bcrypt = require("bcryptjs")
 
@@ -48,6 +48,7 @@ const getFirmSetting = async (req, res) => {
         const firmSetting = await FirmSetting.findById(id);
         if (!firmSetting) {
             return res.status(404).json({ error: "No such Firm Setting" });
+           
         }
         res.status(200).json({ message: "Firm Setting retrieved successfully", firmSetting });
     } catch (error) {
@@ -57,15 +58,16 @@ const getFirmSetting = async (req, res) => {
 
 //get firmsetting by id
 const getFirmSettingsByAdminUserId = async (req, res) => {
-    const { adminuserid } = req.params;
+    const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(adminuserid)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(404).json({ error: "Invalid Admin User ID" });
     }
 
     try {
-        const firmSettings = await FirmSetting.find({ adminuserid: adminuserid });
-
+        const firmSettings = await FirmSetting.find({ adminuserid: id })
+        // .populate('giveaccountaccessteammembers', 'User');
+        .populate({ path: 'giveaccountaccessteammembers', model: 'User' });
         if (!firmSettings || firmSettings.length === 0) {
             return res.status(404).json({ error: "No Firm Settings found for this Admin User" });
         }

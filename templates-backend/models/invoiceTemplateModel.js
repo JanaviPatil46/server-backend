@@ -89,6 +89,11 @@ const invoiceTemplateSchema = new mongoose.Schema({
         type: summarySchema,
     },
 
+    clientNote: {
+        type: String,
+    },
+
+
 }, { timestamps: true });
 
 const InvoiceTemplate = mongoose.model('InvoiceTemplate', invoiceTemplateSchema);

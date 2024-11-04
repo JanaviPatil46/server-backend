@@ -8,9 +8,16 @@ const companyAddressSchema = new mongoose.Schema({
     },
 
     country: {
-        type: String,
-    //    required: [true, 'Country is required'],
+        name: {
+            type: String,
+            required: true
+        },
+        code: {
+            type: String,
+            required: true
+        }
     },
+    
     streetAddress: {
         type: String,
       //  required: [true, 'Street address is required'],

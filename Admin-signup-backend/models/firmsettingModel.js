@@ -28,9 +28,9 @@ const firmsettingsSchema = new mongoose.Schema({
     state: {
         type: String,
         required: false,
-        minlength: 2,
-        maxlength: 50,
-        trim: true,
+        // minlength: 2,
+        // maxlength: 50,
+        // trim: true,
     },
     postalCode: {
         type: Number,
@@ -41,8 +41,8 @@ const firmsettingsSchema = new mongoose.Schema({
     firmPhoneNumber: {
         type: Number,
         required: false,
-        min: 1000000000, // Minimum 10-digit number
-        max: 9999999999, // Maximum 10-digit number
+        // min: 1000000000, // Minimum 10-digit number
+        // max: 9999999999, // Maximum 10-digit number
     },
     firmwebsite: {
         type: String,
@@ -114,7 +114,8 @@ const firmsettingsSchema = new mongoose.Schema({
         type: String,
     },
     logouploadlink: {
-
+        type: String, // This can store the file path or URL of the profile picture
+        required: false, // Not required, can be optional
     },
     defaultlanguage: {
         type: String,
@@ -158,9 +159,8 @@ const firmsettingsSchema = new mongoose.Schema({
         type: Date
     },
     defaultfoldertemp: {
-        // type: mongoose.Schema.Types.ObjectId,
-        // ref: 'folder',
-        type:String
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'folder',
     },
     showfirmcontactdetails: {
         type: Boolean

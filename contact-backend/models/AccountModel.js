@@ -1,42 +1,60 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const accountSchema = new mongoose.Schema({
+const accountSchema = new mongoose.Schema(
+  {
     clientType: {
-        type: String,
-        required: [true, 'Client type is required'],
-
+      type: String,
+      required: [true, "Client type is required"],
     },
     accountName: {
-        type: String,
-        required: [true, 'Account name is required'],
+      type: String,
+      required: [true, "Account name is required"],
     },
-    
-    tags: [{
+
+    tags: [
+      {
         type: mongoose.Schema.Types.ObjectId,
         // type: Array,
-        ref: 'Tags', 
-       // required: true
-}],
+        ref: "Tags",
+        // required: true
+      },
+    ],
 
-teamMember: [{
+    teamMember: [
+      {
         type: Array,
-        type: mongoose.Schema.Types.ObjectId, ref: 'User',
-        required: [true, 'Team members are required'],
-    }], 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: [true, "Team members are required"],
+      },
+    ],
 
     // foldertemplate: {
     //     type: String
     // },
     contacts: [
-        {
-            type: Array,
-        type: mongoose.Schema.Types.ObjectId, ref: 'Contacts',
-            // required    : [true, 'Contacts are required'],
-        }
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Contacts",
+        // required    : [true, 'Contacts are required'],
+      },
     ],
-    
-}, { timestamps: true });
+    description: {
+      type: String,
+    },
+    active: {
+      type: Boolean,
+      default: true,
+    },
+
+    companyAddress: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "companyAddress", // Ensure this matches your CompanyAddresses model
+    },
+  },
+  { timestamps: true }
+);
 
 // Collection
-const Accounts = mongoose.model('Accounts', accountSchema);
+const Accounts = mongoose.model("Accounts", accountSchema);
 module.exports = Accounts;

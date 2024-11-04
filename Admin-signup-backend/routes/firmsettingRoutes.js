@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 
-const { createFirmSetting, getFirmSettings, getFirmSetting, deleteFirmSetting, updateFirmSetting,getFirmSettingsByAdminUserId,getFirmSettingsByTeamMember } = require('../controller/firmsettingController')
+const { createFirmSetting, getFirmSettings, getFirmSetting, deleteFirmSetting, updateFirmSetting,getFirmSettingsByAdminUserId,getFirmSettingsByTeamMember } = require('../Controller/firmsettingController')
 
 //*******************ADMIN SIGNUP START********************* */
 router.get('/firmsetting', getFirmSettings)
