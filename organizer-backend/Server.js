@@ -8,7 +8,7 @@ const app = express();
 require('dotenv').config();
 app.use(express.json());
 const organizerTempRoutes = require('./routes/organizerTempRoutes')
-
+const organizerAccountWiseRoute = require("./routes/organizerAccountWiseRoute");
 app.use(cors());
 
 
@@ -18,6 +18,9 @@ dbconnect()
 
 // routes
 app.use("/workflow/organizers", organizerTempRoutes);
+
+
+app.use("/workflow/orgaccwise", organizerAccountWiseRoute);
 
 const PORT = process.env.PORT || 7600;
 app.listen(PORT, ()=>{
