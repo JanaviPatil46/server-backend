@@ -4,6 +4,8 @@ const app = express();
 const cors = require('cors');
 const contactRoutes = require('./routers/contactRoutes');
 const AccountsRoutes = require('./routers/AccountsRoutes');
+const manageTeamMember = require("./middleware/manageTeamMember");
+const AssignTags = require('./middleware/assignbulktags')
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -12,6 +14,18 @@ app.use(express.json());
 app.use('/contacts', contactRoutes)
 
 app.use('/accounts', AccountsRoutes)
+
+//! assignbulktags Routes
+const assignbulktags = require("./middleware/assignbulktags");
+app.use("/assignbulktags", assignbulktags);
+
+
+app.use("/manageteammember", manageTeamMember);
+app.use('/', AssignTags)
+
+//! sendBulkEmails Routes
+const sendBulkEmails = require("./middleware/sendBulkEmails");
+app.use("/", sendBulkEmails);
 
 //Cors Polycy 
 app.use((req, res, next) => {
@@ -24,6 +38,8 @@ app.use((req, res, next) => {
 
 // database connect
 dbconnect()
+
+
 
 
 const port = process.env.PORT || 7000;

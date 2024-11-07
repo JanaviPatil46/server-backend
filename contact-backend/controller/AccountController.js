@@ -162,12 +162,12 @@ const updateAccount = async (req, res) => {
 
     try {
         // Extract data from the request body
-        const { clientType, accountName, tags, teamMember, companyName, country, streetAddress, city, state, postalCode, contacts } = req.body;
+        const { clientType, accountName, tags, teamMember, companyName, country, streetAddress, city, state, postalCode, contacts,active } = req.body;
 
         // Find and update the account information
         const updatedAccount = await Accounts.findOneAndUpdate(
             { _id: id },
-            { clientType, accountName, tags, teamMember, contacts },
+            { clientType, accountName, tags, teamMember, contacts,active },
             { new: true }
         );
 
@@ -353,6 +353,42 @@ const removeContactFromAccount = async (req, res) => {
     }
 };
 
+//get all Account List
+const getActiveAccountList = async (req, res) => {
+    try {
+      const { isActive } = req.params;
+  
+      // const teamMembers = await TeamMember.find({})
+      const accounts = await Accounts.find({ active: isActive }).populate({ path: "tags", model: "Tags" }).populate({ path: "teamMember", model: "User" }).populate({ path: "contacts", model: "Contacts" });
+  
+      const accountlist = accounts.map((account) => {
+        return {
+          id: account._id,
+          Name: account.accountName,
+          Follow: "",
+          Type: account.clientType,
+          Invoices: "",
+          Credits: "",
+          Tasks: "",
+          Team: account.teamMember,
+          Tags: account.tags,
+          Proposals: "",
+          Unreadchats: "",
+          Pendingorganizers: "",
+          Pendingsignatures: "",
+          Lastlogin: "",
+          Contacts: account.contacts,
+        };
+      });
+  
+      //sort({ createdAt: -1 });
+      res.status(200).json({ message: "Accounts retrieved successfully", accountlist });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+  
+
 
 module.exports = {
     createAccount,
@@ -365,5 +401,6 @@ module.exports = {
     getAccountsbyContactId,
     updateContactsForAccounts,
     removeContactFromAccount,
-    getAccountbyIdAll
+    getAccountbyIdAll,
+    getActiveAccountList
 }

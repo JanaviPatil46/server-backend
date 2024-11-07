@@ -86,9 +86,26 @@ const jobSchema = new mongoose.Schema({
             return this.absolutedates;
         }
     },
-    comments: {
-        type: String
-    },
+    comments: [
+        {
+          type: String,
+        },
+      ],
+      showinclientportal: {
+        type: Boolean,
+      },
+  
+      jobnameforclient: {
+        type: String,
+      },
+  
+      clientfacingstatus: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ClientFacingjobStatus",
+      },
+      clientfacingDescription: {
+        type: String,
+      },
     active: {
         type: Boolean,
         default: true

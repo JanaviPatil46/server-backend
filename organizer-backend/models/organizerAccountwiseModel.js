@@ -42,6 +42,7 @@ const organizerAccountWiseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'OrganizerTemplate',
     },
+    
 
     reminders : {
         type: Boolean,
