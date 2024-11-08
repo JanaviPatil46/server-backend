@@ -389,6 +389,44 @@ const getActiveAccountList = async (req, res) => {
   };
   
 
+  const updateContactsForMultipleAccounts = async (req, res) => {
+    const { accountIds } = req.body;
+  
+    // Validate accountIds array
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+      return res.status(400).json({ error: "accountIds must be a non-empty array" });
+    }
+    for (const id of accountIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: `Invalid Account ID: ${id}` });
+      }
+    }
+  
+    try {
+      // Find all accounts with the specified IDs
+      const accounts = await Accounts.find({ _id: { $in: accountIds } }).select("contacts");
+      if (accounts.length === 0) {
+        return res.status(404).json({ error: "No accounts found" });
+      }
+  
+      // Extract all contact IDs from the accounts
+      const contactIds = accounts.flatMap((account) => account.contacts);
+  
+      // Extract fields to update from the request body
+      const { login, notify, emailSync } = req.body;
+  
+      // Update all contacts associated with the specified accounts
+      const result = await Contacts.updateMany({ _id: { $in: contactIds } }, { $set: { login, notify, emailSync } });
+  
+      res.status(200).json({
+        message: "Contacts updated successfully",
+        modifiedCount: result.modifiedCount,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
 
 module.exports = {
     createAccount,
@@ -402,5 +440,6 @@ module.exports = {
     updateContactsForAccounts,
     removeContactFromAccount,
     getAccountbyIdAll,
-    getActiveAccountList
+    getActiveAccountList,
+    updateContactsForMultipleAccounts,
 }

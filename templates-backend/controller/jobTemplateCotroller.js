@@ -110,28 +110,45 @@ const updateJobTemplate = async (req, res) => {
 
 
 //Get a single JobTemplate List
+// const getJobTemplateList = async (req, res) => {
+//     const { id } = req.params;
+
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//         return res.status(404).json({ error: "Invalid JobTemplate ID" });
+//     }
+
+//     try {
+//         const jobTemplate = await JobTemplate.findById(id)
+//          .populate({ path: 'jobassignees', model: 'User' });
+                  
+//         if (!jobTemplate) {
+//             return res.status(404).json({ error: "No such JobTemplate" });
+//         }
+
+//         res.status(200).json({ message: "JobTemplate retrieved successfully", jobTemplate });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
 const getJobTemplateList = async (req, res) => {
     const { id } = req.params;
-
+  
     if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).json({ error: "Invalid JobTemplate ID" });
+      return res.status(404).json({ error: "Invalid JobTemplate ID" });
     }
-
+  
     try {
-        const jobTemplate = await JobTemplate.findById(id)
-         .populate({ path: 'jobassignees', model: 'User' });
-                  
-        if (!jobTemplate) {
-            return res.status(404).json({ error: "No such JobTemplate" });
-        }
-
-        res.status(200).json({ message: "JobTemplate retrieved successfully", jobTemplate });
+      const jobTemplate = await JobTemplate.findById(id).populate({ path: "jobassignees", model: "User" }).populate({ path: "clientfacingstatus", model: "ClientFacingjobStatus" });
+      if (!jobTemplate) {
+        return res.status(404).json({ error: "No such JobTemplate" });
+      }
+  
+      res.status(200).json({ message: "JobTemplate retrieved successfully", jobTemplate });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
-
-
+  };
 module.exports = {
     createJobTemplate,
     getJobTemplate,
