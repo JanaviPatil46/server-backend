@@ -903,7 +903,14 @@ const mongoose = require("mongoose");
 const Accounts = require("../models/AccountModel"); // Ensure the path is correct
 const User = require("../models/userModel"); // Import User if not already imported
 const InvoiceTemplate = require("../models/invoiceTemplateModel"); // Import if used
-
+const nodemailer = require("nodemailer");
+const PDFDocument = require("pdfkit");
+const Contacts = require("../models/contactsModel")
+const fs = require("fs");
+const puppeteer = require("puppeteer");
+const path = require("path");
+require('dotenv').config();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 //get all Invoice
 const getInvoices = async (req, res) => {
   try {
@@ -937,45 +944,321 @@ const getInvoice = async (req, res) => {
 };
 
 //POST a new Invoice
+// const createInvoice = async (req, res) => {
+//   const { account, invoicenumber, invoicedate, description, invoicetemplate, paymentMethod, teammember, emailinvoicetoclient, reminders, daysuntilnextreminder, numberOfreminder, scheduleinvoice, scheduleinvoicedate, scheduleinvoicetime, payInvoicewithcredits, lineItems, summary, active } = req.body;
+
+//   try {
+//     const existingInvoice = await Invoice.findOne({
+//       invoicenumber,
+//     });
+
+//     if (existingInvoice) {
+//       return res.status(201).json({ message: "Invoice already exists" });
+//     }
+//     const newInvoice = await Invoice.create({
+//       account,
+//       invoicenumber,
+//       invoicedate,
+//       description,
+//       invoicetemplate,
+//       paymentMethod,
+//       teammember,
+//       emailinvoicetoclient,
+//       reminders,
+//       daysuntilnextreminder,
+//       numberOfreminder,
+//       scheduleinvoice,
+//       scheduleinvoicedate,
+//       scheduleinvoicetime,
+//       payInvoicewithcredits,
+//       lineItems,
+//       summary,
+//       active,
+//     });
+
+//     return res.status(201).json({ message: "Invoice created successfully", newInvoice });
+//   } catch (error) {
+//     console.error("Error creating Invoice:", error);
+//     return res.status(500).json({ error: "Error creating Invoice", error });
+//   }
+// };
+
 const createInvoice = async (req, res) => {
-  const { account, invoicenumber, invoicedate, description, invoicetemplate, paymentMethod, teammember, emailinvoicetoclient, reminders, daysuntilnextreminder, numberOfreminder, scheduleinvoice, scheduleinvoicedate, scheduleinvoicetime, payInvoicewithcredits, lineItems, summary, active } = req.body;
+  const {
+      account, invoicedate, description, invoicetemplate, paymentMethod, teammember, emailinvoicetoclient,
+      reminders, daysuntilnextreminder, numberOfreminder, scheduleinvoice, scheduleinvoicedate, scheduleinvoicetime,
+      payInvoicewithcredits, lineItems, summary, active
+  } = req.body;
 
   try {
-    const existingInvoice = await Invoice.findOne({
-      invoicenumber,
-    });
+      // Generate the next invoice number
+      const lastInvoice = await Invoice.findOne().sort({ invoicenumber: -1 }).select("invoicenumber");
+      const invoicenumber = lastInvoice ? lastInvoice.invoicenumber + 1 : 1;
 
-    if (existingInvoice) {
-      return res.status(201).json({ message: "Invoice already exists" });
-    }
-    const newInvoice = await Invoice.create({
-      account,
-      invoicenumber,
-      invoicedate,
-      description,
-      invoicetemplate,
-      paymentMethod,
-      teammember,
-      emailinvoicetoclient,
-      reminders,
-      daysuntilnextreminder,
-      numberOfreminder,
-      scheduleinvoice,
-      scheduleinvoicedate,
-      scheduleinvoicetime,
-      payInvoicewithcredits,
-      lineItems,
-      summary,
-      active,
-    });
+      // Check if the invoice already exists (redundant with autoincrement but kept for safety)
+      const existingInvoice = await Invoice.findOne({ invoicenumber });
+      if (existingInvoice) {
+          return res.status(409).json({ message: "Invoice already exists" });
+      }
 
-    return res.status(201).json({ message: "Invoice created successfully", newInvoice });
+      // Create a new invoice
+      const newInvoice = await Invoice.create({
+          account, invoicenumber, invoicedate, description, invoicetemplate, paymentMethod, teammember, emailinvoicetoclient,
+          reminders, daysuntilnextreminder, numberOfreminder, scheduleinvoice, scheduleinvoicedate, scheduleinvoicetime,
+          payInvoicewithcredits, lineItems, summary, active
+      });
+
+      const accountinv = await Accounts.findById(account).populate("contacts");
+      if (!accountinv) {
+          return res.status(404).json({ status: 404, message: "Account not found." });
+      }
+
+      // Get the current date
+      const currentDate = new Date();
+      const lastDay = new Date(currentDate);
+      lastDay.setDate(lastDay.getDate() - 1); // Subtract 1 day to get the last day
+      const nextDay = new Date(currentDate);
+      nextDay.setDate(nextDay.getDate() + 1); // Add 1 day to get the next day
+
+      // Define options for formatting date
+      const options = {
+          weekday: 'long',          // Full name of the day of the week (e.g., "Monday")
+          day: '2-digit',          // Two-digit day of the month (01 through 31)
+          month: 'long',           // Full name of the month (e.g., "January")
+          year: 'numeric',         // Four-digit year (e.g., 2022)
+          week: 'numeric',         // ISO week of the year (1 through 53)
+          monthNumber: '2-digit',  // Two-digit month number (01 through 12)
+          quarter: 'numeric',      // Quarter of the year (1 through 4)
+      };
+
+      // Format the current date using options
+      const currentFullDate = currentDate.toLocaleDateString('en-US', options);
+      const currentDayNumber = currentDate.getDate();
+      const currentDayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const currentWeek = currentDate.toLocaleDateString('en-US', { week: 'numeric' });
+      const currentMonthNumber = currentDate.getMonth() + 1; // Months are zero-based, so add 1
+      const currentMonthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
+      const currentQuarter = Math.floor((currentDate.getMonth() + 3) / 3); // Calculate the quarter
+      const currentYear = currentDate.getFullYear();
+
+      // Format the last day using options
+      const lastDayFullDate = lastDay.toLocaleDateString('en-US', options);
+      const lastDayNumber = lastDay.getDate();
+      const lastDayName = lastDay.toLocaleDateString('en-US', { weekday: 'long' });
+      const lastWeek = lastDay.toLocaleDateString('en-US', { week: 'numeric' });
+      const lastMonthNumber = lastDay.getMonth() + 1; // Months are zero-based, so add 1
+      const lastMonthName = lastDay.toLocaleDateString('en-US', { month: 'long' });
+      const lastQuarter = Math.floor((lastDay.getMonth() + 3) / 3); // Calculate the quarter
+      const lastYear = lastDay.getFullYear();
+
+      // Format the next day using options
+      const nextDayFullDate = nextDay.toLocaleDateString('en-US', options);
+      const nextDayNumber = nextDay.getDate();
+      const nextDayName = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
+      const nextWeek = nextDay.toLocaleDateString('en-US', { week: 'numeric' });
+      const nextMonthNumber = nextDay.getMonth() + 1; // Months are zero-based, so add 1
+      const nextMonthName = nextDay.toLocaleDateString('en-US', { month: 'long' });
+      const nextQuarter = Math.floor((nextDay.getMonth() + 3) / 3); // Calculate the quarter
+      const nextYear = nextDay.getFullYear();
+
+      // Filter valid contacts
+      const validContacts = accountinv.contacts.filter(contact => contact.emailSync);
+      if (validContacts.length === 0) {
+          return res.status(400).json({ status: 400, message: "No contacts with emailSync enabled." });
+      }
+
+      const transporter = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 587,
+          secure: false, // Use STARTTLS
+          auth: {
+            user: process.env.EMAIL,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+        tls: {
+            rejectUnauthorized: false
+        },
+      });
+
+      // Ensure the invoices directory exists
+      const invoicesDir = path.resolve(__dirname, "invoices");
+      if (!fs.existsSync(invoicesDir)) {
+          fs.mkdirSync(invoicesDir, { recursive: true });
+      }
+
+      // Generate PDF for the invoice
+      const pdfPath = path.join(invoicesDir, `invoice_${invoicenumber}.pdf`);
+
+      console.log("PDF successfully written to:", pdfPath);
+      const replacePlaceholders = (template, data) => {
+        return template.replace(/\[([\w\s]+)\]/g, (match, placeholder) => {
+            return data[placeholder.trim()] || '';
+        });
+    };
+      const emailPromises = validContacts.map(async (contact) => {
+
+          const newdescription = replacePlaceholders(description, {
+              ACCOUNT_NAME: accountinv.accountName,
+              FIRST_NAME: contact.firstName,
+              MIDDLE_NAME: contact.middleName,
+              LAST_NAME: contact.lastName,
+              CONTACT_NAME: contact.contactName,
+              COMPANY_NAME: contact.companyName,
+              COUNTRY: contact.country,
+              STREET_ADDRESS: contact.streetAddress,
+              STATEPROVINCE: contact.state,
+              PHONE_NUMBER: contact.phoneNumbers,
+              ZIPPOSTALCODE: contact.postalCode,
+              CITY: contact.city,
+              CURRENT_DAY_FULL_DATE: currentFullDate,
+              CURRENT_DAY_NUMBER: currentDayNumber,
+              CURRENT_DAY_NAME: currentDayName,
+              CURRENT_WEEK: currentWeek,
+              CURRENT_MONTH_NUMBER: currentMonthNumber,
+              CURRENT_MONTH_NAME: currentMonthName,
+              CURRENT_QUARTER: currentQuarter,
+              CURRENT_YEAR: currentYear,
+              LAST_DAY_FULL_DATE: lastDayFullDate,
+              LAST_DAY_NUMBER: lastDayNumber,
+              LAST_DAY_NAME: lastDayName,
+              LAST_WEEK: lastWeek,
+              LAST_MONTH_NUMBER: lastMonthNumber,
+              LAST_MONTH_NAME: lastMonthName,
+              LAST_QUARTER: lastQuarter,
+              LAST_YEAR: lastYear,
+              NEXT_DAY_FULL_DATE: nextDayFullDate,
+              NEXT_DAY_NUMBER: nextDayNumber,
+              NEXT_DAY_NAME: nextDayName,
+              NEXT_WEEK: nextWeek,
+              NEXT_MONTH_NUMBER: nextMonthNumber,
+              NEXT_MONTH_NAME: nextMonthName,
+              NEXT_QUARTER: nextQuarter,
+              NEXT_YEAR: nextYear,
+          });
+
+          const printContent = `
+          <html>
+          <head>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      padding: 35px;
+                  }
+                  h1 {
+                      color: #333;
+                  }
+                  p {
+                      color: #555;
+                  }
+                  table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      margin-top: 20px;
+                  }
+                  th, td {
+                      border: 1px solid #ddd;
+                      padding: 8px;
+                      text-align: left;
+                  }
+                  th {
+                      background-color: #f2f2f2;
+                  }
+                  .summary-table {
+                      width: 50%;
+                      margin-left: auto;
+                      margin-top: 20px;
+                  }
+                  .total-row td {
+                      font-weight: bold;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>Invoice Number #${newInvoice.invoicenumber}</h1>
+              <p><strong>Date:</strong> ${new Date(newInvoice.invoicedate).toLocaleDateString()}</p>
+              <p><strong>${accountinv.accountName}</strong></p>
+              <p><strong>Description:</strong> ${newdescription}</p>
+              <table>
+                  <thead>
+                      <tr>
+                          <th>Product/Service</th>
+                          <th>Rate</th>
+                          <th>Quantity</th>
+                          <th>Amount</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      ${newInvoice.lineItems
+                  .map(item => `
+                              <tr>
+                                  <td>${item.productorService}</td>
+                                  <td>$${item.rate}</td>
+                                  <td>${item.quantity}</td>
+                                  <td>$${item.amount}</td>
+                              </tr>
+                          `)
+                  .join("")}
+                  </tbody>
+              </table>
+              <table class="summary-table">
+                  <tr>
+                      <td><strong>Subtotal</strong></td>
+                      <td>$${newInvoice.summary.subtotal.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                      <td><strong>Tax</strong></td>
+                      <td>$${newInvoice.summary.taxTotal.toFixed(2)}</td>
+                  </tr>
+                  <tr class="total-row">
+                      <td><strong>Total</strong></td>
+                      <td>$${newInvoice.summary.total.toFixed(2)}</td>
+                  </tr>
+              </table>
+          </body>
+          </html>
+      `;
+
+          // Generate PDF with Puppeteer
+          const browser = await puppeteer.launch();
+          const page = await browser.newPage();
+          await page.setContent(printContent, { waitUntil: "networkidle0" });
+          await page.pdf({ path: pdfPath, format: "A4" });
+          await browser.close();
+
+          console.log(`Preparing to send email to: ${contact.email}`);
+          const mailOptions = {
+              from: "dipeeka.pote52@gmail.com", // Sender's email
+              to: contact.email, // Recipient's email
+              subject: "Invoice Created", // Subject of the email
+              text: `Dear ${accountinv.accountName},\n\nYour invoice has been created.\n\nBest regards,`, // Plain text content
+              // html: printContent, // HTML content of the email
+              attachments: [
+                  {
+                      filename: `invoice_${invoicenumber}.pdf`, // Filename for the attachment
+                      path: pdfPath // Path to the PDF file
+                  }
+              ]
+          };
+
+          try {
+              const result = await transporter.sendMail(mailOptions);
+              return result;
+          } catch (error) {
+              console.error(`Failed to send email to ${contact.email}:`, error.message);
+              throw error;
+          }
+      });
+
+      console.log("Waiting for all emails to complete...");
+      await Promise.all(emailPromises);
+
+      console.log("All emails sent successfully.");
+      return res.status(201).json({ message: "Invoice created successfully", newInvoice });
   } catch (error) {
-    console.error("Error creating Invoice:", error);
-    return res.status(500).json({ error: "Error creating Invoice", error });
+      console.error("Error creating Invoice:", error);
+      return res.status(500).json({ error: "Error creating Invoice", details: error.message });
   }
 };
-
 //delete a Invoice
 const deleteInvoice = async (req, res) => {
   const { id } = req.params;
@@ -1061,22 +1344,152 @@ const getInvoiceListbyid = async (req, res) => {
 };
 
 // Get a single InvoiceList by Account ID
+// const getInvoiceListbyAccountid = async (req, res) => {
+//   const { id } = req.params; // Correct destructuring
+//   // console.log(id); // Log the account ID for debugging
+
+//   try {
+//     const invoice = await Invoice.find({ account: id }); // Corrected syntax here
+
+//     if (!invoice || invoice.length === 0) {
+//       return res.status(404).json({ message: "No invoices found for this account." });
+//     }
+
+//     res.status(200).json({ message: "Invoice retrieved successfully", invoice });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 const getInvoiceListbyAccountid = async (req, res) => {
-  const { id } = req.params; // Correct destructuring
-  // console.log(id); // Log the account ID for debugging
+  const { id } = req.params; // Destructuring the account ID
 
   try {
-    const invoice = await Invoice.find({ account: id }); // Corrected syntax here
+      const invoice = await Invoice.find({ account: id }); // Fetch invoices for the account
 
-    if (!invoice || invoice.length === 0) {
-      return res.status(404).json({ message: "No invoices found for this account." });
-    }
+      if (!invoice || invoice.length === 0) {
+          return res.status(404).json({ message: "No invoices found for this account." });
+      }
 
-    res.status(200).json({ message: "Invoice retrieved successfully", invoice });
+      // Fetch additional data for placeholders
+      const account = await Accounts.findById(id).populate("contacts");
+ 
+      const validContact = account.contacts.filter(contact => contact.emailSync);
+
+      const currentDate = new Date();
+
+      // Define placeholder values
+      const placeholderValues = {
+          ACCOUNT_NAME: account?.accountName || '',
+          FIRST_NAME: validContact[0]?.firstName || '',
+          MIDDLE_NAME: validContact[0]?.middleName || '',
+          LAST_NAME: validContact[0]?.lastName || '',
+          CONTACT_NAME: validContact[0]?.contactName || '',
+          COMPANY_NAME: validContact[0]?.companyName || '',
+          COUNTRY: validContact[0]?.country || '',
+          STREET_ADDRESS: validContact[0]?.streetAddress || '',
+          STATEPROVINCE: validContact[0]?.state || '',
+          PHONE_NUMBER: validContact[0]?.phoneNumbers || '',
+          ZIPPOSTALCODE: validContact[0]?.postalCode || '',
+          CITY: validContact[0]?.city || '',
+          CURRENT_DAY_FULL_DATE: currentDate.toLocaleDateString(),
+          CURRENT_DAY_NUMBER: currentDate.getDate(),
+          CURRENT_DAY_NAME: currentDate.toLocaleString('default', { weekday: 'long' }),
+          CURRENT_MONTH_NUMBER: currentDate.getMonth() + 1,
+          CURRENT_MONTH_NAME: currentDate.toLocaleString('default', { month: 'long' }),
+          CURRENT_YEAR: currentDate.getFullYear(),
+          // Add other dynamic placeholders as required
+      };
+
+      // Function to replace placeholders in text
+      const replacePlaceholders = (template, data) => {
+          return template.replace(/\[([\w\s]+)\]/g, (match, placeholder) => {
+              return data[placeholder.trim()] || '';
+          });
+      };
+
+      // Update each invoice's description with placeholders replaced
+      const updatedInvoices = invoice.map((inv) => {
+          const updatedDescription = replacePlaceholders(inv.description || '', placeholderValues);
+          return {
+              ...inv.toObject(),
+              description: updatedDescription, // Replace description with the updated version
+          };
+      });
+
+      res.status(200).json({
+          message: "Invoices retrieved successfully",
+          invoice: updatedInvoices,
+      });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
   }
 };
+// const getInvoiceListbyAccountid = async (req, res) => {
+//   const { id } = req.params; // Destructuring the account ID
+
+//   try {
+//       const invoices = await Invoice.find({ account: id }); // Fetch invoices for the account
+
+//       if (!invoices || invoices.length === 0) {
+//           return res.status(404).json({ message: "No invoices found for this account." });
+//       }
+
+//       // Fetch additional data for placeholders
+//       const account = await Accounts.findById(newOrganizerAccountWise.accountid).populate("contacts");
+ 
+//       const validContact = account.contacts.filter(contact => contact.emailSync);
+
+//       const currentDate = new Date();
+
+//       // Define placeholder values
+//       const placeholderValues = {
+//           ACCOUNT_NAME: account?.accountName || '',
+//           FIRST_NAME: validContact?.firstName || '',
+//           MIDDLE_NAME: validContact?.middleName || '',
+//           LAST_NAME: validContact?.lastName || '',
+//           CONTACT_NAME: validContact?.contactName || '',
+//           COMPANY_NAME: validContact?.companyName || '',
+//           COUNTRY: validContact?.country || '',
+//           STREET_ADDRESS: validContact?.streetAddress || '',
+//           STATEPROVINCE: validContact?.state || '',
+//           PHONE_NUMBER: validContact?.phoneNumbers || '',
+//           ZIPPOSTALCODE: validContact?.postalCode || '',
+//           CITY: validContact?.city || '',
+//           CURRENT_DAY_FULL_DATE: currentDate.toLocaleDateString(),
+//           CURRENT_DAY_NUMBER: currentDate.getDate(),
+//           CURRENT_DAY_NAME: currentDate.toLocaleString('default', { weekday: 'long' }),
+//           CURRENT_MONTH_NUMBER: currentDate.getMonth() + 1,
+//           CURRENT_MONTH_NAME: currentDate.toLocaleString('default', { month: 'long' }),
+//           CURRENT_YEAR: currentDate.getFullYear(),
+//           // Add other dynamic placeholders as required
+//       };
+
+//       // Function to replace placeholders in text
+//       const replacePlaceholders = (template, data) => {
+//           return template.replace(/\[([\w\s]+)\]/g, (match, placeholder) => {
+//               return data[placeholder.trim()] || '';
+//           });
+//       };
+
+//       // Update each invoice's description with placeholders replaced
+//       const updatedInvoices = invoices.map((inv) => {
+//           const updatedDescription = replacePlaceholders(inv.description || '', placeholderValues);
+//           return {
+//               ...inv.toObject(),
+//               description: updatedDescription, // Replace description with the updated version
+//           };
+//       });
+
+//       res.status(200).json({
+//           message: "Invoices retrieved successfully",
+//           invoices: updatedInvoices,
+//       });
+
+//   } catch (error) {
+//       res.status(500).json({ error: error.message });
+//   }
+// };
 
 module.exports = {
   createInvoice,

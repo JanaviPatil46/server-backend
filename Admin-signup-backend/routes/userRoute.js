@@ -13,6 +13,13 @@ router.get('/login/verifytoken', validateToken, (req, res) => {
     res.json({ message: 'Access granted', user: req.user });
 });
 router.post('/login/logout', validateToken, logout)
+
+//client verifytoken
+router.post("/clientlogin/generatetokenforclient", generatetoken);
+router.get("/clientlogin/verifytokenforclient", validateToken, (req, res) => {
+  res.json({ message: "Access granted", user: req.user });
+});
+router.post("/clientlogin/logout", validateToken, logout);
 router.post("/login", adminLogin);
 router.post("/login/signup", adminSignup);     //It is also for create user
 router.get("/user", getUsers);

@@ -27,6 +27,10 @@ app.use('/', AssignTags)
 const sendBulkEmails = require("./middleware/sendBulkEmails");
 app.use("/", sendBulkEmails);
 
+
+
+const  editloginnotifyemailsync = require("./middleware/editloginnotifyemailsync")
+app.use('/', editloginnotifyemailsync)
 //Cors Polycy 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');

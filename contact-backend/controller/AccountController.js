@@ -4,16 +4,17 @@ const Tags = require('../models/tagModel');
 const Contacts = require('../models/contactsModel');
 const User = require('../models/userModel');
 const companyAddress = require('../models/companyAddressModel');
-
+const fs = require("fs");
+const fsPromises = require("fs").promises;
 // POST a new account
 const createAccount = async (req, res) => {
     try {
         let newAccount;
         let newCompanyAccount;
 
-        const { clientType, accountName, tags, teamMember, contacts, description, active } = req.body;
+        const { clientType, accountName, tags, teamMember, contacts, description,foldertemplate, active } = req.body;
 
-        newAccount = await Accounts.create({ clientType, accountName, tags, teamMember, contacts, description, active });
+        newAccount = await Accounts.create({ clientType, accountName, tags, teamMember, contacts, description,foldertemplate, active });
 
         if (clientType === 'Company') {
             const { companyName, country, streetAddress, city, state, postalCode, active } = req.body;

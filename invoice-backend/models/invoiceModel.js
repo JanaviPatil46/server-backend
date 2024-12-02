@@ -49,7 +49,7 @@ const invoiceSchema = new mongoose.Schema({
         ref: 'Accounts',
     },
     invoicenumber: {
-        type: String,
+        type: Number,
     },
     invoicedate: {
         type: Date,
