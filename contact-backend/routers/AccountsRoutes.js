@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { updateContactsForMultipleAccounts,getActiveAccountList,createAccount, getAccount, getAccounts, updateAccount, deleteAccount, getAccountsList, getAccountsListById, getAccountsbyContactId, updateContactsForAccounts, removeContactFromAccount, getAccountbyIdAll } = require("../controller/AccountController"); // Adjust the path to your actual controller
+const { getAccountListByUserId,updateContactsForMultipleAccounts,getActiveAccountList,createAccount, getAccount, getAccounts, updateAccount, deleteAccount, getAccountsList, getAccountsListById, getAccountsbyContactId, updateContactsForAccounts, removeContactFromAccount, getAccountbyIdAll } = require("../controller/AccountController"); // Adjust the path to your actual controller
 
 router.get("/accountdetails", getAccounts);
 
@@ -16,6 +16,7 @@ router.get("/account/accountdetailslist/", getAccountsList);
 
 router.get("/accountdetails/accountdetailslist/listbyid/:id", getAccountsListById);
 
+router.get('/accountdetails/accountdetailslist/listbyuserid/:id',getAccountListByUserId);
 router.get("/accountdetails/accountbycontactid/:contactId", getAccountsbyContactId);
 
 router.patch("/accountdetails/updatecontacts/byaccountIds", updateContactsForAccounts);

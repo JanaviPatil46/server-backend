@@ -47,7 +47,10 @@ const accountSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
+    userid: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     companyAddress: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "companyAddress", // Ensure this matches your CompanyAddresses model
