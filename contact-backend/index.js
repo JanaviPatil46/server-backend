@@ -25,12 +25,12 @@ app.use('/', AssignTags)
 
 //! sendBulkEmails Routes
 const sendBulkEmails = require("./middleware/sendBulkEmails");
-app.use("/", sendBulkEmails);
+app.use("/sendemails", sendBulkEmails);
 
 
 
 const  editloginnotifyemailsync = require("./middleware/editloginnotifyemailsync")
-app.use('/', editloginnotifyemailsync)
+app.use('/editloginnotifyemail', editloginnotifyemailsync)
 //Cors Polycy 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
